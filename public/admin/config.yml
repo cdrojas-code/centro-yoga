@@ -18,6 +18,17 @@ logo_url: /favicon.svg
 media_folder: public/uploads
 public_folder: /uploads
 
+# Las fotos se achican y pasan a WebP al subirlas (una foto de celular de 5 MB queda en ~300 KB).
+media_libraries:
+  default:
+    config:
+      transformations:
+        raster_image:
+          format: webp
+          quality: 80
+          width: 1600
+          height: 1600
+
 # ─────────── Accesos directos en la barra lateral (un solo archivo cada uno) ───────────
 singletons:
   - name: horarios
@@ -29,7 +40,7 @@ singletons:
         name: aviso
         widget: text
         required: false
-        hint: Aparece debajo del título "Horarios" en la web.
+        hint: Aparece al lado de la grilla, en «Cómo empezar». La duración de las clases se calcula sola a partir de los horarios.
       # Una lista por día. Las clases ya cargadas aparecen plegadas en una línea ("08:00 · Hatha Yoga").
       - label: Lunes
         name: lunes
@@ -87,6 +98,12 @@ singletons:
     icon: menu_book
     file: src/data/libro.json
     fields:
+      - label: Mostrar el libro en la web
+        name: publicado
+        widget: boolean
+        default: false
+        required: false
+        hint: "Activalo cuando el título, la descripción y la portada estén completos. Mientras esté apagado, la página del libro no aparece."
       - { label: Título, name: titulo, widget: string }
       - { label: Subtítulo, name: subtitulo, widget: string, required: false }
       - { label: Portada, name: portada, widget: image, required: false }
@@ -100,7 +117,7 @@ singletons:
         summary: "{{fields.texto}}"
         fields:
           - { label: Texto del botón, name: texto, widget: string, hint: "Ej. Comprar en Mercado Libre" }
-          - { label: Link, name: url, widget: string, type: url }
+          - { label: Link, name: url, widget: string, type: url, pattern: ["^https://", "Tiene que ser un link completo que empiece con https://"] }
 
   - divider: true
 
@@ -113,23 +130,30 @@ singletons:
       - { label: Frase principal (portada), name: eslogan, widget: string }
       - { label: Descripción corta, name: descripcion, widget: text, hint: "Aparece en la portada y en Google." }
       - { label: Nombre de la profesora, name: profesora, widget: string, required: false }
+      - label: Trayectoria (línea destacada en la portada)
+        name: credenciales
+        widget: string
+        required: false
+        hint: "Una línea corta. Ej. «Más de 20 años enseñando · Formadora de profesoras · Autora de …». Vacío = no se muestra."
       - { label: Foto de fondo de la portada, name: hero_imagen, widget: image, required: false }
       - label: WhatsApp
         name: whatsapp
         widget: string
         required: false
         hint: "Con código de país, sin + ni espacios. Ej. celular 11 5567-5161 → **5491155675161**"
+        pattern: ["^[0-9]{10,15}$", "Solo números, sin espacios ni guiones. Ej. 5491155675161"]
       - { label: Mensaje inicial de WhatsApp, name: whatsapp_mensaje, widget: string, required: false }
       - { label: Email, name: email, widget: string, required: false, hint: "Si queda vacío, no se muestra en la web." }
-      - { label: Instagram, name: instagram, widget: string, required: false, hint: "Link completo, empezando con https://" }
-      - { label: Facebook, name: facebook, widget: string, required: false, hint: "Link completo, empezando con https://" }
-      - { label: YouTube, name: youtube, widget: string, required: false, hint: "Link completo, empezando con https://" }
+      - { label: Instagram, name: instagram, widget: string, required: false, hint: "Link completo, empezando con https://", pattern: ["^https://", "Tiene que ser un link completo que empiece con https://"] }
+      - { label: Facebook, name: facebook, widget: string, required: false, hint: "Link completo, empezando con https://", pattern: ["^https://", "Tiene que ser un link completo que empiece con https://"] }
+      - { label: YouTube, name: youtube, widget: string, required: false, hint: "Link completo, empezando con https://", pattern: ["^https://", "Tiene que ser un link completo que empiece con https://"] }
       - { label: Dirección, name: direccion, widget: string, required: false }
       - label: Mapa
         name: mapa_embed
         widget: string
         required: false
-        hint: "Link del mapa de Google para mostrar en Contacto. Vacío = sin mapa."
+        hint: "Link para *incorporar* el mapa (Google Maps → Compartir → Incorporar un mapa → copiar solo lo que está entre comillas después de src=). Vacío = sin mapa."
+        pattern: ["(output=embed|/maps/embed)", "Tiene que ser el link para incorporar el mapa (contiene output=embed o /maps/embed)"]
       - label: Clave de Web3Forms
         name: web3forms_key
         widget: string
@@ -197,6 +221,7 @@ collections:
         widget: string
         required: false
         hint: "Si queda vacío, el botón Inscribirme abre WhatsApp con un mensaje listo."
+        pattern: ["^https://", "Tiene que ser un link completo que empiece con https://"]
       - { label: Descripción, name: body, widget: text, required: false }
 
   # ───────────────────── PÁGINAS DE TEXTO ─────────────────────

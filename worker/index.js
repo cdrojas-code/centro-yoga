@@ -16,6 +16,13 @@ const LIBRES = [/^\/admin(\/|$)/, /^\/favicon\.svg$/, /^\/og-imagen\.png$/];
 
 export default {
   async fetch(request, env) {
+    // www.dominio → dominio (una sola dirección para Google y para compartir).
+    const pedidoUrl = new URL(request.url);
+    if (pedidoUrl.hostname.startsWith('www.')) {
+      pedidoUrl.hostname = pedidoUrl.hostname.slice(4);
+      return Response.redirect(pedidoUrl.toString(), 301);
+    }
+
     if (String(env.MANTENIMIENTO).toLowerCase() !== 'true') {
       return env.ASSETS.fetch(request);
     }
@@ -125,8 +132,8 @@ function paginaMantenimiento(claveIncorrecta) {
   .btn { display: inline-block; padding: .75rem 1.4rem; border-radius: 999px; border: 2px solid var(--terracota); color: var(--terracota-osc); font-weight: 700; text-decoration: none; }
   .btn:hover { background: var(--terracota-osc); border-color: var(--terracota-osc); color: #fff; }
   .btn:focus-visible { outline: 3px solid var(--terracota-osc); outline-offset: 3px; }
-  .btn--wa { background: #128c4a; border-color: #128c4a; color: #fff; }
-  .btn--wa:hover { background: #0e7a3f; border-color: #0e7a3f; }
+  .btn--wa { background: #0f7a3e; border-color: #0f7a3e; color: #fff; }
+  .btn--wa:hover { background: #0b6633; border-color: #0b6633; }
   .aviso { margin-top: 28px; font-size: .9rem; color: var(--terracota-osc); }
 </style>
 </head>

@@ -1,10 +1,13 @@
 ---
 import Base from '../layouts/Base.astro';
 import libro from '../data/libro.json';
-import { parrafos } from '../lib/utils';
+import { libroPublicado, parrafos } from '../lib/utils';
+
+// Mientras el libro no esté marcado "Mostrar en la web", esta página lleva al inicio.
+if (!libroPublicado) return Astro.redirect('/');
 
 type Link = { texto: string; url: string };
-const links = (libro.links ?? []) as Link[];
+const links = ((libro.links ?? []) as Link[]).filter((l) => l?.texto && l?.url);
 ---
 
 <Base titulo={libro.titulo} descripcion={libro.subtitulo} imagen={libro.portada}>
@@ -43,9 +46,10 @@ const links = (libro.links ?? []) as Link[];
   .libro { background: radial-gradient(circle at 20% 30%, rgba(217, 150, 43, 0.15), transparent 50%), var(--crema); }
   .libro__grid { display: grid; gap: 48px; align-items: start; }
   @media (min-width: 860px) { .libro__grid { grid-template-columns: 340px 1fr; } }
-  .libro__portada img { border-radius: 6px; box-shadow: 0 18px 40px rgba(60, 40, 20, 0.22); width: 100%; max-width: 340px; margin: 0 auto; }
+  .libro__portada img { border-radius: 6px; box-shadow: 0 18px 40px rgba(60, 40, 20, 0.22); width: 100%; max-width: 220px; margin: 0 auto; }
+  @media (min-width: 860px) { .libro__portada img, .portada-vacia { max-width: 340px; } }
   .portada-vacia {
-    aspect-ratio: 2 / 3; max-width: 340px; margin: 0 auto;
+    aspect-ratio: 2 / 3; max-width: 220px; margin: 0 auto;
     display: grid; place-items: center; text-align: center; padding: 24px;
     border-radius: 6px; box-shadow: 0 18px 40px rgba(60, 40, 20, 0.22);
     background: linear-gradient(160deg, var(--terracota), var(--terracota-osc));

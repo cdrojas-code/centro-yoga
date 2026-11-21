@@ -43,7 +43,7 @@ Cada vez que guardás algo, la web se actualiza sola en **1 o 2 minutos**.
 
 ## Cambiar textos de "Quién soy", "Formación" o el libro
 - **Páginas** → *Quién soy* o *Formación de profesoras*.
-- **El libro** (menú izquierdo).
+- **El libro** (menú izquierdo). La página del libro aparece en la web recién cuando activás **"Mostrar el libro en la web"**. Activalo cuando el título, la descripción y la tapa estén completos.
 
 ## Cambiar WhatsApp, redes, dirección o el nombre del centro
 - **Datos del sitio y contacto** (menú izquierdo).

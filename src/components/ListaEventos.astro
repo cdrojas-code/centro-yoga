@@ -1,51 +1,81 @@
 ---
 import type { CollectionEntry } from 'astro:content';
-import { fmtFecha } from '../lib/utils';
 import sitio from '../data/sitio.json';
-import { waLink } from '../lib/utils';
+import { fmtFecha, isoDia, parrafos, waLink } from '../lib/utils';
 
 interface Props {
   eventos: CollectionEntry<'eventos'>[];
   mostrarDescripcion?: boolean;
 }
 const { eventos, mostrarDescripcion = false } = Astro.props;
+const avisame = waLink(sitio.whatsapp, '¡Hola! Avisame cuando haya nuevos talleres o encuentros.');
 ---
 
-{eventos.length === 0 ? (
-  <p class="vacio">Por ahora no hay eventos programados. ¡Seguinos en redes para enterarte de los próximos!</p>
-) : (
-  <div class="eventos">
-    {eventos.map((e) => {
-      const d = e.data;
-      const inscribirse = d.inscripcion || waLink(sitio.whatsapp, `¡Hola! Quiero inscribirme a: ${d.titulo}`);
-      return (
-        <article class="evento tarjeta">
-          <div class="evento__fecha">
-            <span class="evento__dia">{fmtFecha(d.fecha, { day: 'numeric' })}</span>
-            <span class="evento__mes">{fmtFecha(d.fecha, { month: 'short' }).replace('.', '')}</span>
-          </div>
-          <div class="evento__cuerpo">
-            <h3>{d.titulo}</h3>
-            <p class="evento__meta">
-              {fmtFecha(d.fecha, { weekday: 'long', day: 'numeric', month: 'long' })}
-              {d.hora && ` · ${d.hora}${d.hora_fin ? ` a ${d.hora_fin}` : ''} hs`}
-              {d.lugar && ` · ${d.lugar}`}
-            </p>
-            {mostrarDescripcion && e.body && <p>{e.body.trim()}</p>}
-            <div class="evento__pie">
-              {d.precio && <span class="evento__precio">{d.precio}</span>}
-              {inscribirse && (
-                <a href={inscribirse} class="btn btn--borde" target="_blank" rel="noopener" aria-label={`Inscribirme a ${d.titulo}`}>Inscribirme</a>
-              )}
-            </div>
-          </div>
-        </article>
-      );
-    })}
+<div class="lista-eventos" data-eventos>
+  <div class="eventos-vacio" data-vacio hidden={eventos.length > 0}>
+    <p>
+      <strong>Por ahora no hay talleres programados.</strong>
+      {(sitio.instagram || avisame) && (
+        <Fragment>
+          {' '}Enterate de los próximos{' '}{sitio.instagram && <Fragment>en <a href={sitio.instagram} target="_blank" rel="noopener">Instagram</a></Fragment>}{sitio.instagram && avisame && ' o '}{avisame && <a href={avisame} target="_blank" rel="noopener">pedinos que te avisemos por WhatsApp</a>}.
+        </Fragment>
+      )}
+    </p>
   </div>
-)}
+
+  {eventos.length > 0 && (
+    <div class="eventos">
+      {eventos.map((e) => {
+        const d = e.data;
+        const inscribirse = d.inscripcion || waLink(sitio.whatsapp, `¡Hola! Quiero inscribirme a: ${d.titulo}`);
+        return (
+          <article class="evento tarjeta" data-fecha={isoDia(d.fecha)}>
+            <div class="evento__fecha" aria-hidden="true">
+              <span class="evento__dia">{fmtFecha(d.fecha, { day: 'numeric' })}</span>
+              <span class="evento__mes">{fmtFecha(d.fecha, { month: 'short' }).replace('.', '')}</span>
+            </div>
+            <div class="evento__cuerpo">
+              <h3>{d.titulo}</h3>
+              <p class="evento__meta">
+                {fmtFecha(d.fecha, { weekday: 'long', day: 'numeric', month: 'long' })}
+                {d.hora && ` · ${d.hora}${d.hora_fin ? ` a ${d.hora_fin}` : ''} hs`}
+                {d.lugar && ` · ${d.lugar}`}
+              </p>
+              {mostrarDescripcion && parrafos(e.body).map((p) => <p>{p}</p>)}
+              <div class="evento__pie">
+                {d.precio && <span class="evento__precio">{d.precio}</span>}
+                {inscribirse && (
+                  <a href={inscribirse} class="btn btn--borde" target="_blank" rel="noopener" aria-label={`Inscribirme a ${d.titulo}`}>Inscribirme</a>
+                )}
+              </div>
+            </div>
+          </article>
+        );
+      })}
+    </div>
+  )}
+</div>
+
+<script>
+  // La web se reconstruye una vez por día; por si eso falla, los eventos que ya pasaron
+  // también se ocultan en el navegador (fecha de hoy en Argentina).
+  const hoy = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Argentina/Buenos_Aires', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(new Date());
+  document.querySelectorAll<HTMLElement>('[data-eventos]').forEach((lista) => {
+    const eventos = [...lista.querySelectorAll<HTMLElement>('[data-fecha]')];
+    if (eventos.length === 0) return;
+    eventos.forEach((ev) => { if ((ev.dataset.fecha ?? '') < hoy) ev.hidden = true; });
+    if (eventos.every((ev) => ev.hidden)) lista.querySelector<HTMLElement>('[data-vacio]')?.removeAttribute('hidden');
+  });
+</script>
 
 <style>
+  .eventos-vacio { color: var(--tinta-suave); max-width: 46rem; }
+  .eventos-vacio p { margin: 0; }
+  .eventos-vacio strong { color: var(--tinta); }
+  .eventos-vacio[hidden], .evento[hidden] { display: none; }
+
   .eventos { display: grid; gap: 16px; }
   .evento { display: grid; grid-template-columns: 76px 1fr; gap: 18px; padding: 20px; align-items: start; }
   .evento__fecha {

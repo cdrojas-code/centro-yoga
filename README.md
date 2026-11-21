@@ -1,7 +1,7 @@
 # Web del centro de yoga
 
 Sitio estático hecho con [Astro](https://astro.build) y editable desde un panel web ([Sveltia CMS](https://github.com/sveltia/sveltia-cms)) en `/admin`.
-El contenido vive en este repo; cada cambio guardado desde el panel hace un commit y Cloudflare Pages vuelve a publicar la web en ~1 minuto.
+El contenido vive en este repo; cada cambio guardado desde el panel hace un commit y Cloudflare (Worker `centro-yoga`, con Workers Builds) vuelve a publicar la web en ~1 minuto.
 
 ## Desarrollo local
 
@@ -32,7 +32,11 @@ npm run build    # genera dist/
 | Imágenes subidas | `public/uploads/` | (automático) |
 | Configuración del panel | `public/admin/config.yml` | — |
 
-Los eventos con fecha anterior a hoy (hora Argentina) no se muestran.
+Los eventos con fecha anterior a hoy (hora Argentina) no se muestran: se filtran al construir la web y, además, se ocultan en el navegador (por si el rebuild diario no corrió).
+
+El libro solo aparece (menú, portada, página y sitemap) cuando `publicado` es `true` en `src/data/libro.json` (panel → El libro → "Mostrar el libro en la web").
+
+El contenido que falta cargar está listado en [`CONTENIDO-PARA-LA-WEB.md`](CONTENIDO-PARA-LA-WEB.md).
 
 ## Puesta en producción (una sola vez)
 
@@ -44,12 +48,11 @@ git remote add origin https://github.com/USUARIO/REPO.git
 git push -u origin main
 ```
 
-### 2. Cloudflare Pages
-1. Cloudflare → **Workers & Pages → Create → Pages → Connect to Git** → elegir el repo.
-2. Framework preset: **Astro**. Build command: `npm run build`. Output: `dist`.
-3. En *Settings → Environment variables* agregar `NODE_VERSION = 22`.
-4. *Custom domains* → agregar el dominio (y `www`). Si el dominio está en NIC Argentina, cambiar los DNS a los que indique Cloudflare (o crear un CNAME a `xxx.pages.dev`).
-5. Cambiar `site` en `astro.config.mjs` y `site_url`/`display_url` en `public/admin/config.yml` por el dominio real.
+### 2. Cloudflare (Worker con Workers Builds)
+1. Cloudflare → **Workers & Pages → Create → Import a repository** → elegir el repo. La configuración está en `wrangler.jsonc` (Worker `centro-yoga`, archivos estáticos de `dist/`).
+2. Build command: `npm run build`. Deploy command: `npx wrangler deploy`.
+3. *Settings → Domains & Routes* → agregar el dominio y `www` como *Custom domains*. El Worker redirige `www` al dominio sin `www`.
+4. Cambiar `site` en `astro.config.mjs` y `site_url`/`display_url` en `public/admin/config.yml` por el dominio real.
 
 ### 3. Login del panel (GitHub OAuth)
 1. Desplegar el worker [sveltia-cms-auth](https://github.com/sveltia/sveltia-cms-auth) en Cloudflare (botón *Deploy to Cloudflare* del README).
@@ -60,10 +63,15 @@ git push -u origin main
 4. En `public/admin/config.yml` completar `repo:` y `base_url:` (URL del worker). Commit y push.
 5. Crear una cuenta de GitHub para tu mamá e invitarla como *collaborator* del repo (con permiso de escritura).
 
-### 4. Rebuild diario (para que los eventos pasados desaparezcan)
-1. Cloudflare Pages → *Settings → Builds → Deploy hooks* → crear uno y copiar la URL.
+### 4. Rebuild diario (opcional)
+Los eventos pasados ya se ocultan en el navegador; el rebuild diario además los saca del HTML.
+1. Cloudflare → Worker `centro-yoga` → *Settings → Builds → Deploy hooks* → crear uno y copiar la URL.
 2. GitHub repo → *Settings → Secrets and variables → Actions* → nuevo secreto `CF_DEPLOY_HOOK` con esa URL.
-3. El workflow `.github/workflows/rebuild-diario.yml` corre todos los días a las 03:00.
+3. El workflow `.github/workflows/rebuild-diario.yml` corre todos los días a las 03:00. Sin el secreto, solo avisa y no falla.
+
+### Al publicar
+1. `wrangler.jsonc` → `"MANTENIMIENTO": "false"`, commit y push.
+2. [Google Search Console](https://search.google.com/search-console) → agregar el dominio → enviar `https://centroargentinoyogareiki.com.ar/sitemap-index.xml`.
 
 ### 5. Formulario de contacto (opcional)
 Crear una clave gratis en [web3forms.com](https://web3forms.com) con el email donde llegan las consultas y pegarla en el panel → *Datos del sitio → Clave de Web3Forms*. Sin clave, la página de contacto muestra solo WhatsApp, email y dirección.

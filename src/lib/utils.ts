@@ -1,4 +1,13 @@
 import { getCollection } from 'astro:content';
+import libro from '../data/libro.json';
+
+/** El libro se muestra (menú, portada y página) solo cuando se marca "Mostrar en la web" en el panel. */
+export const libroPublicado = Boolean((libro as { publicado?: boolean }).publicado && libro.titulo?.trim());
+
+/** Link de Google Maps con indicaciones para llegar a una dirección. */
+export function comoLlegar(direccion: string): string {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(direccion)}`;
+}
 
 export const ZONA_HORARIA = 'America/Argentina/Buenos_Aires';
 export const DIAS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];

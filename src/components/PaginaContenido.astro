@@ -2,6 +2,7 @@
 // Renderiza una página editable desde el panel (colección "paginas").
 import Base from '../layouts/Base.astro';
 import CabeceraPagina from './CabeceraPagina.astro';
+import sitio from '../data/sitio.json';
 import { getEntry, render } from 'astro:content';
 
 interface Props { id: string; eyebrow?: string }
@@ -16,7 +17,7 @@ const { titulo, subtitulo, imagen } = pagina.data;
   <CabeceraPagina eyebrow={eyebrow} titulo={titulo} subtitulo={subtitulo} />
   <section class="seccion">
     <div class:list={['contenedor', { 'con-imagen': imagen }]}>
-      {imagen && <img src={imagen} alt="" class="imagen-redonda" />}
+      {imagen && <img src={imagen} alt={id === 'sobre' ? (sitio.profesora ? `Retrato de ${sitio.profesora}` : 'Retrato de la profesora') : titulo} class="imagen-redonda" />}
       <div class="prosa">
         <Content />
       </div>

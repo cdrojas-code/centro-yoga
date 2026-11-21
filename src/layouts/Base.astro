@@ -1,7 +1,8 @@
 ---
 import '../styles/global.css';
 import sitio from '../data/sitio.json';
-import { waLink } from '../lib/utils';
+import { libroPublicado, waLink, comoLlegar } from '../lib/utils';
+import IconoWhatsapp from '../components/IconoWhatsapp.astro';
 
 interface Props {
   titulo?: string;
@@ -18,18 +19,44 @@ const ogImagen = new URL(imagen || sitio.hero_imagen || '/og-imagen.png', Astro.
 const urlCanonica = new URL(Astro.url.pathname, Astro.site);
 const wa = waLink(sitio.whatsapp, sitio.whatsapp_mensaje);
 
+// Links con barra final: así coinciden con la URL canónica y no hay redirección extra.
 const nav = [
-  { href: '/horarios', texto: 'Horarios' },
-  { href: '/precios', texto: 'Precios' },
-  { href: '/formacion', texto: 'Formación' },
-  { href: '/sobre', texto: 'Quién soy' },
-  { href: '/libro', texto: 'El libro' },
-  { href: '/blog', texto: 'Blog' },
-  { href: '/contacto', texto: 'Contacto' },
+  { href: '/horarios/', texto: 'Horarios' },
+  { href: '/precios/', texto: 'Precios' },
+  { href: '/formacion/', texto: 'Formación' },
+  { href: '/sobre/', texto: 'Quién soy' },
+  ...(libroPublicado ? [{ href: '/libro/', texto: 'El libro' }] : []),
+  { href: '/blog/', texto: 'Blog' },
+  { href: '/contacto/', texto: 'Contacto' },
 ];
-const ruta = Astro.url.pathname.replace(/\/$/, '') || '/';
-const activo = (href: string) => ruta === href || ruta.startsWith(href + '/');
+const sinBarra = (s: string) => s.replace(/\/$/, '') || '/';
+const ruta = sinBarra(Astro.url.pathname);
+const activo = (href: string) => ruta === sinBarra(href) || ruta.startsWith(sinBarra(href) + '/');
 const anio = new Date().getFullYear();
+
+// Ficha del negocio para Google (datos estructurados).
+const telefono = (sitio.whatsapp || '').replace(/\D/g, '');
+const fichaNegocio = {
+  '@context': 'https://schema.org',
+  '@type': 'YogaStudio',
+  name: sitio.nombre,
+  description: sitio.descripcion,
+  url: Astro.site?.href,
+  image: new URL(sitio.hero_imagen || '/og-imagen.png', Astro.site).href,
+  ...(telefono && { telephone: `+${telefono}` }),
+  ...(sitio.email && { email: sitio.email }),
+  ...(sitio.direccion && {
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: sitio.direccion.split(',')[0]?.trim(),
+      addressLocality: 'Lomas de Zamora',
+      addressRegion: 'Buenos Aires',
+      addressCountry: 'AR',
+    },
+  }),
+  sameAs: [sitio.instagram, sitio.facebook, sitio.youtube].filter(Boolean),
+};
+const esInicio = ruta === '/';
 ---
 
 <!doctype html>
@@ -56,8 +83,10 @@ const anio = new Date().getFullYear();
       href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Nunito+Sans:wght@400;600;700&display=swap"
       rel="stylesheet"
     />
+    {esInicio && <script type="application/ld+json" set:html={JSON.stringify(fichaNegocio)} />}
   </head>
   <body>
+    <a href="#contenido" class="saltar">Saltar al contenido</a>
     <header class="cabecera">
       <div class="contenedor cabecera__fila">
         <a href="/" class="marca">
@@ -80,11 +109,16 @@ const anio = new Date().getFullYear();
               {item.texto}
             </a>
           ))}
+          {wa && (
+            <a href={wa} class="btn btn--wa nav__wa" target="_blank" rel="noopener">
+              <IconoWhatsapp /> Escribinos por WhatsApp
+            </a>
+          )}
         </nav>
       </div>
     </header>
 
-    <main>
+    <main id="contenido" tabindex="-1">
       <slot />
     </main>
 
@@ -97,6 +131,7 @@ const anio = new Date().getFullYear();
         <div>
           <p class="pie__titulo">Visitanos</p>
           {sitio.direccion && <p>{sitio.direccion}</p>}
+          {sitio.direccion && <p><a href={comoLlegar(sitio.direccion)} target="_blank" rel="noopener">Cómo llegar →</a></p>}
           {sitio.email && <p><a href={`mailto:${sitio.email}`}>{sitio.email}</a></p>}
         </div>
         <div>
@@ -165,7 +200,19 @@ const anio = new Date().getFullYear();
     display: flex; flex-direction: column; gap: 5px;
     background: none; border: 0; padding: 10px; cursor: pointer;
   }
-  .menu-btn__barra { width: 24px; height: 2px; background: var(--tinta); border-radius: 2px; }
+  .menu-btn__barra { width: 24px; height: 2px; background: var(--tinta); border-radius: 2px; transition: transform 0.2s, opacity 0.2s; }
+  /* Menú abierto: las tres barras se convierten en una X */
+  .menu-btn[aria-expanded='true'] .menu-btn__barra:nth-child(2) { transform: translateY(7px) rotate(45deg); }
+  .menu-btn[aria-expanded='true'] .menu-btn__barra:nth-child(3) { opacity: 0; }
+  .menu-btn[aria-expanded='true'] .menu-btn__barra:nth-child(4) { transform: translateY(-7px) rotate(-45deg); }
+
+  .saltar {
+    position: absolute; left: 12px; top: -60px; z-index: 100;
+    background: var(--tinta); color: #fff; padding: 10px 16px; border-radius: 8px;
+    font-weight: 700; text-decoration: none;
+  }
+  .saltar:focus { top: 12px; color: #fff; }
+  main:focus { outline: none; }
 
   .nav {
     display: none;
@@ -181,9 +228,11 @@ const anio = new Date().getFullYear();
     font-weight: 600; border-bottom: 1px solid var(--arena);
   }
   .nav__link--activo { color: var(--terracota-osc); }
+  .nav__wa { margin-top: 16px; justify-content: center; }
 
   @media (min-width: 1140px) {
     .menu-btn { display: none; }
+    .nav__wa { display: none; }
     .nav {
       display: flex; position: static; flex-direction: row; gap: 4px;
       background: none; border: 0; padding: 0;

@@ -2,6 +2,7 @@
 import Base from '../layouts/Base.astro';
 import CabeceraPagina from '../components/CabeceraPagina.astro';
 import TablaPrecios from '../components/TablaPrecios.astro';
+import IconoWhatsapp from '../components/IconoWhatsapp.astro';
 import precios from '../data/precios.json';
 import sitio from '../data/sitio.json';
 import { waLink } from '../lib/utils';
@@ -17,8 +18,8 @@ const wa = waLink(sitio.whatsapp, '¡Hola! Quisiera consultar por los planes y p
       <TablaPrecios />
       {precios.nota && <p class="nota">{precios.nota}</p>}
       <div class="acciones" style="margin-top: 24px">
-        <a href="/horarios" class="btn btn--primario">Ver horarios</a>
-        {wa && <a href={wa} class="btn btn--wa" target="_blank" rel="noopener">Consultar por WhatsApp</a>}
+        <a href="/horarios/" class="btn btn--primario">Ver horarios</a>
+        {wa && <a href={wa} class="btn btn--wa" target="_blank" rel="noopener"><IconoWhatsapp /> Consultar por WhatsApp</a>}
       </div>
     </div>
   </section>

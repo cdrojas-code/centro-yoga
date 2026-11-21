@@ -1,6 +1,10 @@
 # Reconstruye la web todos los días a las 03:00 (hora Argentina) para que los
-# eventos que ya pasaron desaparezcan solos. Requiere el secreto CF_DEPLOY_HOOK
-# (URL del "Deploy hook" de Cloudflare Pages). Ver README.md.
+# eventos que ya pasaron desaparezcan también del HTML (en el navegador ya se
+# ocultan solos, así que esto es un refuerzo, no algo imprescindible).
+#
+# Opcional: secreto CF_DEPLOY_HOOK con la URL de un "Deploy hook" del Worker
+# (Cloudflare → Workers & Pages → centro-yoga → Settings → Builds → Deploy hooks).
+# Si el secreto no está cargado, el workflow solo avisa y no falla.
 name: Rebuild diario
 
 on:
@@ -12,9 +16,12 @@ jobs:
   rebuild:
     runs-on: ubuntu-latest
     steps:
-      - name: Disparar deploy en Cloudflare Pages
+      - name: Disparar deploy del Worker
         env:
           HOOK: ${{ secrets.CF_DEPLOY_HOOK }}
         run: |
-          if [ -z "$HOOK" ]; then echo "Falta el secreto CF_DEPLOY_HOOK"; exit 1; fi
+          if [ -z "$HOOK" ]; then
+            echo "::notice::No hay secreto CF_DEPLOY_HOOK: se omite el rebuild (los eventos pasados igual se ocultan en el navegador)."
+            exit 0
+          fi
           curl -fsS -X POST "$HOOK"

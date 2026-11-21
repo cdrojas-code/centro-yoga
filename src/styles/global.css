@@ -5,8 +5,8 @@
   --terracota: #b5653a;
   --terracota-osc: #8f4a26; /* para texto y para botones con texto blanco (contraste 6:1) */
   --terracota-hover: #723a1d;
-  --verde-wa: #128c4a; /* verde WhatsApp oscurecido para que el texto blanco se lea */
-  --verde-wa-hover: #0e7a3f;
+  --verde-wa: #0f7a3e; /* verde WhatsApp oscurecido: texto blanco con contraste 5,4:1 (mínimo AA 4,5:1) */
+  --verde-wa-hover: #0b6633;
   --azafran: #d9962b;
   --salvia: #5f7a64;
   --tinta: #2d2a26;
@@ -103,6 +103,7 @@ p { margin: 0 0 1em; }
 .btn--borde:hover { background: var(--terracota-osc); border-color: var(--terracota-osc); color: var(--blanco); }
 .btn--wa { background: var(--verde-wa); color: #fff; }
 .btn--wa:hover { background: var(--verde-wa-hover); color: #fff; }
+.btn svg { flex-shrink: 0; }
 .acciones { display: flex; flex-wrap: wrap; gap: 12px; }
 
 /* Tarjetas */
@@ -134,6 +135,7 @@ p { margin: 0 0 1em; }
   font-style: italic;
   color: var(--tinta-suave);
 }
+.prosa blockquote p:last-child { margin-bottom: 0; }
 .prosa img { border-radius: var(--radio); margin: 1.5em 0; }
 
 /* Cabecera de página interna */

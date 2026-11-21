@@ -1,5 +1,6 @@
 ---
 import PaginaContenido from '../components/PaginaContenido.astro';
+import IconoWhatsapp from '../components/IconoWhatsapp.astro';
 import sitio from '../data/sitio.json';
 import { waLink } from '../lib/utils';
 
@@ -9,7 +10,7 @@ const wa = waLink(sitio.whatsapp, '¡Hola! Quisiera recibir información sobre l
 <PaginaContenido id="formacion" eyebrow="Profesorado">
   {wa && (
     <p style="margin-top: 32px">
-      <a href={wa} class="btn btn--wa" target="_blank" rel="noopener">Pedir el programa por WhatsApp</a>
+      <a href={wa} class="btn btn--wa" target="_blank" rel="noopener"><IconoWhatsapp /> Pedir el programa por WhatsApp</a>
     </p>
   )}
 </PaginaContenido>

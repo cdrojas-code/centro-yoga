@@ -5,6 +5,11 @@ import CabeceraPagina from '../components/CabeceraPagina.astro';
 
 <Base titulo="Página no encontrada" noindex>
   <CabeceraPagina titulo="No encontramos esta página" subtitulo="Puede que se haya movido o que el enlace esté mal escrito.">
-    <a href="/" class="btn btn--primario">Volver al inicio</a>
+    <div class="acciones">
+      <a href="/" class="btn btn--primario">Volver al inicio</a>
+      <a href="/horarios/" class="btn btn--borde">Horarios</a>
+      <a href="/precios/" class="btn btn--borde">Precios</a>
+      <a href="/contacto/" class="btn btn--borde">Contacto</a>
+    </div>
   </CabeceraPagina>
 </Base>

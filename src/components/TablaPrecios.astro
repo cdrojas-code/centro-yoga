@@ -12,7 +12,7 @@ const planes = (precios.planes ?? []) as Plan[];
     {planes.map((p) => (
       <div class:list={['plan tarjeta', { 'plan--destacado': p.destacado }]}>
         {p.destacado && <span class="plan__badge">Recomendado</span>}
-        <h3>{p.nombre}</h3>
+        <h2 class="plan__nombre">{p.nombre}</h2>
         <p class="plan__precio">{p.precio}</p>
         {p.periodo && <p class="plan__periodo">{p.periodo}</p>}
         {p.detalle && p.detalle.length > 0 && (
@@ -39,7 +39,7 @@ const planes = (precios.planes ?? []) as Plan[];
     font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
     padding: 4px 10px; border-radius: 999px;
   }
-  .plan h3 { font-size: 1.45rem; }
+  .plan__nombre { font-size: 1.45rem; }
   .plan__precio { font-family: var(--serif); font-size: 2.6rem; font-weight: 600; color: var(--terracota-osc); margin: 0; line-height: 1.1; }
   .plan__periodo { color: var(--tinta-suave); font-size: 0.9rem; margin-bottom: 16px; }
   ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }

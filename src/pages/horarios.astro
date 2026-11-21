@@ -3,31 +3,71 @@ import Base from '../layouts/Base.astro';
 import CabeceraPagina from '../components/CabeceraPagina.astro';
 import GrillaHorarios from '../components/GrillaHorarios.astro';
 import ListaEventos from '../components/ListaEventos.astro';
+import IconoWhatsapp from '../components/IconoWhatsapp.astro';
 import horarios from '../data/horarios.json';
-import { eventosFuturos } from '../lib/utils';
+import sitio from '../data/sitio.json';
+import { eventosFuturos, waLink } from '../lib/utils';
 
 const eventos = await eventosFuturos();
+const wa = waLink(sitio.whatsapp, '¡Hola! Quiero reservar una clase de yoga.');
 ---
 
-<Base titulo="Horarios" descripcion="Grilla semanal de clases de yoga y próximos talleres.">
-  <CabeceraPagina eyebrow="Almanaque" titulo="Horarios" subtitulo={horarios.aviso} />
+<Base titulo="Horarios" descripcion="Días y horarios de las clases de yoga, y próximos talleres. Reservá tu clase por WhatsApp.">
+  <CabeceraPagina
+    eyebrow="Clases"
+    titulo="Horarios"
+    subtitulo={`Elegí el día y el horario que te quede cómodo.${wa ? ' Tocá una hora para reservar por WhatsApp.' : ''}`}
+  />
 
   <section class="seccion">
-    <div class="contenedor">
-      <div class="encabezado-seccion">
-        <h2>Clases semanales</h2>
+    <div class="contenedor horarios">
+      <div>
+        <h2 class="sr-only">Clases semanales</h2>
+        <GrillaHorarios />
       </div>
-      <GrillaHorarios />
-      <p style="margin-top: 28px"><a href="/precios" class="btn btn--primario">Ver precios</a></p>
+      <aside class="horarios__info">
+        <h2 class="horarios__titulo">Cómo empezar</h2>
+        {horarios.aviso && <p>{horarios.aviso}</p>}
+        <p>Si es tu primera vez, escribinos y te contamos cuál es la clase ideal para vos.</p>
+        <div class="acciones">
+          {wa && (
+            <a href={wa} class="btn btn--wa" target="_blank" rel="noopener">
+              <IconoWhatsapp /> Reservar mi clase
+            </a>
+          )}
+          <a href="/precios/" class="btn btn--borde">Ver precios</a>
+        </div>
+      </aside>
     </div>
   </section>
 
-  <section class="seccion seccion--alt" id="eventos">
-    <div class="contenedor">
-      <div class="encabezado-seccion">
-        <h2>Talleres, retiros y encuentros</h2>
+  {eventos.length > 0 ? (
+    <section class="seccion seccion--alt" id="eventos">
+      <div class="contenedor">
+        <div class="encabezado-seccion">
+          <span class="eyebrow">Agenda</span>
+          <h2>Talleres, retiros y encuentros</h2>
+        </div>
+        <ListaEventos eventos={eventos} mostrarDescripcion />
       </div>
-      <ListaEventos eventos={eventos} mostrarDescripcion />
-    </div>
-  </section>
+    </section>
+  ) : (
+    <section class="sin-eventos" id="eventos">
+      <div class="contenedor">
+        <ListaEventos eventos={eventos} />
+      </div>
+    </section>
+  )}
 </Base>
+
+<style>
+  .horarios { display: grid; gap: 32px; align-items: start; }
+  @media (min-width: 980px) { .horarios { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 48px; } }
+  .horarios__info { max-width: 40rem; }
+  @media (min-width: 980px) { .horarios__info { position: sticky; top: 100px; padding-top: 12px; } }
+  .horarios__titulo { font-size: 1.9rem; }
+  .horarios__info p { color: var(--tinta-suave); }
+  .horarios__info .acciones { margin-top: 20px; }
+
+  .sin-eventos { background: var(--crema-2); padding: 32px 0; }
+</style>

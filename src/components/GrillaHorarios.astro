@@ -1,60 +1,212 @@
 ---
+// Agenda semanal: un renglón por día (los 7, aunque no haya clase).
+// Lo que se repite en todas las clases (nombre, profesora, nivel, duración) se muestra una sola vez arriba.
+// Cada horario es un botón que abre WhatsApp con un mensaje listo.
+// Un script chico resalta "Hoy" y la próxima clase (hora de Argentina); sin JS se ve igual, sin resaltar.
 import horarios from '../data/horarios.json';
-import { DIAS } from '../lib/utils';
+import sitio from '../data/sitio.json';
+import { DIAS, waLink } from '../lib/utils';
 
-// horarios.json tiene una lista por día: { lunes: [...], martes: [...], ... }
 type Clase = { inicio?: string | null; fin?: string | null; clase?: string | null; profesora?: string | null; nivel?: string | null };
 const datos = horarios as unknown as Record<string, Clase[] | undefined>;
 const clave = (dia: string) => dia.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+const limpio = (s?: string | null) => (s ?? '').trim();
+const minutos = (h?: string | null) => {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(limpio(h));
+  return m ? Number(m[1]) * 60 + Number(m[2]) : null;
+};
+const duracion = (c: Clase) => {
+  const a = minutos(c.inicio), b = minutos(c.fin);
+  return a !== null && b !== null && b > a ? b - a : null;
+};
+// "8:30" → "08:30" (para ordenar, comparar y para <time datetime>).
+const hhmm = (h?: string | null) => {
+  const m = minutos(h);
+  return m === null ? limpio(h) : `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+};
 
-const porDia = DIAS.map((dia) => ({
+const semana = DIAS.map((dia) => ({
   dia,
   clases: (datos[clave(dia)] ?? [])
-    .filter((c) => c && c.clase)
-    .sort((a, b) => (a.inicio ?? '').localeCompare(b.inicio ?? '')),
-})).filter((d) => d.clases.length > 0);
+    .filter((c) => c && limpio(c.clase) && limpio(c.inicio))
+    .map((c) => ({ ...c, inicio: hhmm(c.inicio) }))
+    .sort((a, b) => (minutos(a.inicio) ?? 9999) - (minutos(b.inicio) ?? 9999)),
+}));
+const todas = semana.flatMap((d) => d.clases);
+
+// Valor común a todas las clases (o null si alguna difiere o falta).
+function comun<T>(valores: T[]): T | null {
+  return valores.length > 0 && valores.every((v) => v !== null && v !== '' && v === valores[0]) ? valores[0] : null;
+}
+const conteo = new Map<string, number>();
+for (const c of todas) conteo.set(limpio(c.clase), (conteo.get(limpio(c.clase)) ?? 0) + 1);
+const nombreBase = [...conteo.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? '';
+const profesoraComun = comun(todas.map((c) => limpio(c.profesora)));
+const nivelComun = comun(todas.map((c) => limpio(c.nivel)));
+// Duración común entre las clases que tienen hora de fin (una clase sin "fin" no borra el dato de las demás).
+const duracionComun = comun(todas.map(duracion).filter((d): d is number => d !== null));
+
+const resumen = [
+  nombreBase && profesoraComun ? `${nombreBase} con ${profesoraComun}` : nombreBase,
+  nivelComun,
+  duracionComun ? `${duracionComun} minutos` : null,
+].filter(Boolean).join(' · ');
+
+const detalle = (c: Clase) =>
+  [
+    limpio(c.clase) !== nombreBase ? limpio(c.clase) : null,
+    !profesoraComun ? limpio(c.profesora) : null,
+    !nivelComun ? limpio(c.nivel) : null,
+    duracion(c) !== null && duracion(c) !== duracionComun ? `${duracion(c)} min` : null,
+  ].filter(Boolean).join(' · ');
+
+const reservar = (c: Clase, dia: string) =>
+  waLink(sitio.whatsapp, `¡Hola! Quiero ir a la clase de ${limpio(c.clase)} del ${dia.toLowerCase()} a las ${limpio(c.inicio)} hs.`);
 ---
 
-{porDia.length === 0 ? (
+{todas.length === 0 ? (
   <p class="vacio">Pronto vamos a publicar la grilla de horarios.</p>
 ) : (
-  <div class="grilla">
-    {porDia.map(({ dia, clases }) => (
-      <div class="dia">
-        <h3 class="dia__nombre">{dia}</h3>
-        <ul class="dia__lista">
-          {clases.map((c) => (
-            <li class="clase">
-              <span class="clase__hora">{c.inicio}{c.fin && ` – ${c.fin}`}</span>
-              <span class="clase__nombre">{c.clase}</span>
-              {(c.profesora || c.nivel) && (
-                <span class="clase__meta">{[c.profesora, c.nivel].filter(Boolean).join(' · ')}</span>
+  <div class="agenda" data-agenda>
+    {resumen && <p class="agenda__resumen">{resumen}</p>}
+    <p class="agenda__proxima" data-proxima hidden></p>
+    <table class="agenda__tabla">
+      <caption class="sr-only">Clases de la semana</caption>
+      <tbody>
+        {semana.map(({ dia, clases }, i) => (
+          <tr class:list={['agenda__dia', { 'agenda__dia--vacio': clases.length === 0 }]} data-dia={i}>
+            <th scope="row">
+              <span class="agenda__nombre">{dia}</span>
+              <span class="agenda__hoy" hidden>Hoy</span>
+            </th>
+            <td>
+              {clases.length === 0 ? (
+                <span class="agenda__sin">Sin clases</span>
+              ) : (
+                <ul class="agenda__horas">
+                  {clases.map((c) => {
+                    const extra = detalle(c);
+                    const link = reservar(c, dia);
+                    return (
+                      <li data-inicio={limpio(c.inicio)} data-nombre={limpio(c.clase)}>
+                        <a
+                          class="hora"
+                          href={link ?? '/contacto/'}
+                          target={link ? '_blank' : undefined}
+                          rel={link ? 'noopener' : undefined}
+                          aria-label={`Reservar ${limpio(c.clase)} del ${dia.toLowerCase()} a las ${limpio(c.inicio)} hs${link ? ' por WhatsApp' : ''}`}
+                        >
+                          <time datetime={limpio(c.inicio)}>{limpio(c.inicio)}</time>
+                          <span class="hora__hs">hs</span>
+                          {extra && <span class="hora__extra">{extra}</span>}
+                        </a>
+                      </li>
+                    );
+                  })}
+                </ul>
               )}
-            </li>
-          ))}
-        </ul>
-      </div>
-    ))}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   </div>
 )}
 
-<style>
-  .grilla { display: grid; gap: 16px; }
-  @media (min-width: 640px) { .grilla { grid-template-columns: repeat(2, 1fr); } }
-  @media (min-width: 1000px) { .grilla { grid-template-columns: repeat(3, 1fr); } }
+<script>
+  // Resalta el día de hoy y la próxima clase según la hora de Argentina.
+  const NOMBRES = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
+  const partes = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'America/Argentina/Buenos_Aires', weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+  }).formatToParts(new Date());
+  const valor = (t: string) => partes.find((p) => p.type === t)?.value ?? '';
+  const hoy = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(valor('weekday'));
+  const ahora = `${valor('hour')}:${valor('minute')}`;
 
-  .dia {
+  document.querySelectorAll<HTMLElement>('[data-agenda]').forEach((agenda) => {
+    if (hoy < 0) return;
+    const filas = [...agenda.querySelectorAll<HTMLElement>('[data-dia]')];
+    const filaHoy = filas[hoy];
+    filaHoy?.classList.add('agenda__dia--hoy');
+    filaHoy?.querySelector('.agenda__hoy')?.removeAttribute('hidden');
+
+    // Próxima clase: la primera de hoy que todavía no empezó; si no, la primera de los días siguientes.
+    // paso 7 = el mismo día de la semana que viene (si la única clase de hoy ya pasó).
+    for (let paso = 0; paso <= 7; paso++) {
+      const fila = filas[(hoy + paso) % 7];
+      const items = [...(fila?.querySelectorAll<HTMLElement>('li[data-inicio]') ?? [])];
+      const prox = items.find((li) => paso > 0 || (li.dataset.inicio ?? '') > ahora);
+      if (!prox) continue;
+      prox.classList.add('es-proxima');
+      const aviso = agenda.querySelector<HTMLElement>('[data-proxima]');
+      if (aviso) {
+        const dia = NOMBRES[(hoy + paso) % 7];
+        const cuando = paso === 0 ? 'hoy' : paso === 1 ? 'mañana' : paso === 7 ? `el próximo ${dia}` : `el ${dia}`;
+        aviso.textContent = `Próxima clase: ${prox.dataset.nombre ?? ''}, ${cuando} a las ${prox.dataset.inicio} hs`;
+        aviso.hidden = false;
+      }
+      break;
+    }
+  });
+</script>
+
+<style>
+  .agenda {
+    max-width: 760px;
     background: var(--blanco);
     border-radius: var(--radio);
     box-shadow: var(--sombra);
-    padding: 20px 18px;
-    border-top: 4px solid var(--terracota);
+    padding: 20px 16px 8px;
   }
-  .dia__nombre { font-size: 1.5rem; margin-bottom: 12px; }
-  .dia__lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
-  .clase { display: grid; gap: 2px; padding-bottom: 12px; border-bottom: 1px dashed var(--arena); }
-  .clase:last-child { border-bottom: 0; padding-bottom: 0; }
-  .clase__hora { font-weight: 700; color: var(--terracota-osc); font-size: 0.95rem; font-variant-numeric: tabular-nums; }
-  .clase__nombre { font-weight: 700; }
-  .clase__meta { font-size: 0.88rem; color: var(--tinta-suave); }
+  @media (min-width: 640px) { .agenda { padding: 28px 32px 12px; } }
+
+  .agenda__resumen {
+    margin: 0 0 4px;
+    font-family: var(--serif);
+    font-size: 1.35rem;
+    font-weight: 600;
+    line-height: 1.25;
+  }
+  .agenda__proxima { margin: 0 0 8px; color: var(--salvia); font-weight: 700; font-size: 0.95rem; }
+  .agenda__proxima[hidden] { display: none; }
+
+  .agenda__tabla { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  .agenda__dia { border-top: 1px solid var(--arena); }
+  .agenda__dia th, .agenda__dia td { padding: 12px 0; vertical-align: middle; text-align: left; }
+  .agenda__dia th { width: 7.5rem; padding-right: 12px; font-weight: 700; white-space: nowrap; }
+  @media (max-width: 420px) { .agenda__dia th { width: 6.4rem; } }
+
+  .agenda__nombre { display: block; }
+  .agenda__hoy {
+    display: inline-block; margin-top: 2px;
+    background: var(--terracota-osc); color: var(--blanco);
+    font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 1px 8px; border-radius: 999px;
+  }
+  .agenda__hoy[hidden] { display: none; }
+
+  .agenda__dia--vacio th { color: var(--tinta-suave); font-weight: 600; }
+  .agenda__sin { color: var(--tinta-suave); font-size: 0.95rem; }
+
+  .agenda__dia--hoy { background: linear-gradient(90deg, rgba(217, 150, 43, 0.14), transparent 75%); }
+  .agenda__dia--hoy th { color: var(--terracota-osc); padding-left: 10px; }
+
+  .agenda__horas { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .hora {
+    display: inline-flex; align-items: baseline; flex-wrap: wrap; gap: 0 5px;
+    padding: 5px 14px; border-radius: 999px;
+    border: 2px solid var(--terracota);
+    color: var(--terracota-osc); text-decoration: none;
+    font-weight: 700; font-variant-numeric: tabular-nums lining-nums;
+    transition: background 0.2s, color 0.2s;
+  }
+  .hora time { font-size: 1.1rem; }
+  .hora__hs { font-size: 0.85rem; font-weight: 600; }
+  .hora__extra { font-size: 0.85rem; font-weight: 600; color: var(--tinta-suave); }
+  .hora:hover, .es-proxima .hora { background: var(--terracota-osc); border-color: var(--terracota-osc); color: var(--blanco); }
+  .hora:hover .hora__extra, .es-proxima .hora__extra { color: var(--blanco); }
+  .hora:focus-visible { border-radius: 999px; }
+  /* Botón con detalle largo (puede ocupar 2-3 líneas en celular): esquinas redondeadas en vez de píldora */
+  .hora:has(.hora__extra), .hora:has(.hora__extra):focus-visible { border-radius: 14px; }
 </style>
