@@ -1,9 +1,8 @@
 ---
-titulo: Quién soy
-subtitulo: Más de veinte años de práctica y enseñanza, un viaje a la India y un camino compartido.
-imagen: ""
+titulo: Edith Lodoli
+subtitulo: Más de veinte años de práctica y enseñanza, un viaje a la India y un
+  camino compartido.
 ---
-
 Acá va la historia: cómo empezó el camino del yoga, cómo nació el centro y cómo fue creciendo hasta convertirse en un espacio de formación para otras profesoras.
 
 ## El viaje a la India
