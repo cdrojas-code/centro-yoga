@@ -73,7 +73,7 @@ Cuando la fecha pasa, **el taller desaparece solo de la web**. No hace falta bor
    - **Cambiar una clase:** tocá la línea; se despliega y cambiás lo que quieras.
    - **Agregar una clase:** en el día que quieras, tocá **Add an item**. Ya viene con «Yoga», «Maha Devi» y «Todos los niveles»: solo escribís la hora en que **Empieza** y **Termina** (ej. `08:30` y `09:30`).
    - **Sacar una clase:** tocá el botón de borrar de esa clase (al pasar por encima dice *Remove item*) y confirmá.
-   - **El orden no importa:** la web ordena sola por hora. Los días sin clases no se muestran.
+   - **El orden no importa:** la web ordena sola por hora. Los días sin clases aparecen como «Sin clases».
 3. **Save**.
 
 ## Cambiar los precios
