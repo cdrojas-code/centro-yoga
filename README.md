@@ -1,7 +1,29 @@
 # Web del centro de yoga
 
-Sitio estático hecho con [Astro](https://astro.build) y editable desde un panel web ([Sveltia CMS](https://github.com/sveltia/sveltia-cms)) en `/admin`.
-El contenido vive en este repo; cada cambio guardado desde el panel hace un commit y Cloudflare (Worker `centro-yoga`, con Workers Builds) vuelve a publicar la web en ~1 minuto.
+Sitio estático hecho con [Astro](https://astro.build) y editable desde **[Pages CMS](https://pagescms.org)** (`app.pagescms.org`, configurado en [`.pages.yml`](.pages.yml)).
+El panel anterior ([Sveltia CMS](https://github.com/sveltia/sveltia-cms), en `/admin`, `public/admin/config.yml`) queda de respaldo.
+El contenido vive en este repo; cada cambio guardado desde el panel hace un commit en `main` y Cloudflare (Worker `centro-yoga`, con Workers Builds) vuelve a publicar la web en ~1 minuto.
+
+## Panel de edición (Pages CMS)
+
+Pages CMS lee `.pages.yml` **de la rama que abrís** (usá `main`). Activarlo, una sola vez:
+
+1. Mergear esta configuración a `main` (el archivo `.pages.yml` tiene que estar en la raíz de `main`).
+2. Entrar a <https://app.pagescms.org> → **Sign in with GitHub**.
+3. Instalar la GitHub App de Pages CMS en la cuenta dueña del repo (`cdrojas-code`). En la pantalla de GitHub conviene elegir **Only select repositories → centro-yoga**.
+4. Abrir el repo **centro-yoga**, rama **main**. Revisar que el menú muestre Blog, Talleres y eventos, Horarios de clases, Precios, Páginas y Datos del centro (si hay un error en `.pages.yml`, Pages CMS lo muestra ahí).
+5. Invitar a quien edita: en el proyecto → **Collaborators** → **Invite** → escribir su email → **Send invite**. Recibe un email y entra con un código de 6 dígitos que le llega por email (no necesita cuenta de GitHub).
+
+Los colaboradores por email pueden editar contenido e imágenes, pero no `.pages.yml` ni otros colaboradores. Los commits salen con el texto `Panel: …` y, cuando está disponible, el nombre de quien editó (`settings.commit.identity: user`).
+
+Detalles de la configuración (comentados al principio de `.pages.yml`):
+- Pages CMS **borra los campos vacíos** al guardar (`""`, `null`, `[]`); la web ya tolera que falten.
+- *Datos del centro* son tres pantallas sobre el mismo `src/data/sitio.json`; funciona gracias a `settings.content.merge: true`.
+- Las imágenes se suben a `public/uploads` (se guardan como `/uploads/...`), con nombre normalizado. Pages CMS **no las achica**: conviene subirlas ya livianas.
+- Las horas (`inicio`, `fin`, `hora`, `hora_fin`) son texto validado `HH:mm` (Pages CMS no tiene campo de hora).
+- Archivos nuevos: el blog usa `{titulo}.md` (el nombre define la URL y no se puede renombrar desde el panel); los eventos, `{fecha}-{titulo}.md`.
+
+Guía paso a paso para quien edita: [GUIA-PANEL.md](GUIA-PANEL.md).
 
 ## Desarrollo local
 
@@ -13,7 +35,7 @@ npm run dev      # http://localhost:4321
 npm run build    # genera dist/
 ```
 
-### Probar el panel en local
+### Probar el panel de respaldo (Sveltia) en local
 1. `npm run dev` y abrir `http://localhost:4321/admin/` en **Chrome o Edge**.
 2. Elegir **"Work with Local Repository"** y seleccionar la carpeta del proyecto.
 3. Los cambios se escriben directo en los archivos; el sitio en `localhost:4321` se actualiza solo.
@@ -22,19 +44,19 @@ npm run build    # genera dist/
 
 | Qué | Archivo | En el panel |
 |---|---|---|
-| Entradas del blog | `src/content/blog/*.md` | Entradas del blog |
+| Entradas del blog | `src/content/blog/*.md` | Blog |
 | Talleres / eventos | `src/content/eventos/*.md` | Talleres y eventos |
-| Quién soy / Formación | `src/content/paginas/*.md` | Páginas |
+| Quién soy / Formación | `src/content/paginas/*.md` | Páginas → Quién soy / Formación de profesoras |
 | Grilla semanal (una lista por día) | `src/data/horarios.json` | Horarios de clases |
 | Precios | `src/data/precios.json` | Precios |
-| Libro | `src/data/libro.json` | El libro |
-| Nombre, WhatsApp, redes, mapa | `src/data/sitio.json` | Datos del sitio y contacto |
+| Libro | `src/data/libro.json` | Páginas → El libro |
+| Nombre, WhatsApp, redes, mapa | `src/data/sitio.json` | Datos del centro (3 pantallas) |
 | Imágenes subidas | `public/uploads/` | (automático) |
-| Configuración del panel | `public/admin/config.yml` | — |
+| Configuración del panel | `.pages.yml` (respaldo: `public/admin/config.yml`) | — |
 
 Los eventos con fecha anterior a hoy (hora Argentina) no se muestran: se filtran al construir la web y, además, se ocultan en el navegador (por si el rebuild diario no corrió).
 
-El libro solo aparece (menú, portada, página y sitemap) cuando `publicado` es `true` en `src/data/libro.json` (panel → El libro → "Mostrar el libro en la web").
+El libro solo aparece (menú, portada, página y sitemap) cuando `publicado` es `true` en `src/data/libro.json` (panel → Páginas → El libro → "Mostrar el libro en la web").
 
 El contenido que falta cargar está listado en [`CONTENIDO-PARA-LA-WEB.md`](CONTENIDO-PARA-LA-WEB.md).
 
@@ -54,14 +76,15 @@ git push -u origin main
 3. *Settings → Domains & Routes* → agregar el dominio y `www` como *Custom domains*. El Worker redirige `www` al dominio sin `www`.
 4. Cambiar `site` en `astro.config.mjs` y `site_url`/`display_url` en `public/admin/config.yml` por el dominio real.
 
-### 3. Login del panel (GitHub OAuth)
+### 3. Login del panel de respaldo Sveltia (GitHub OAuth)
+Solo hace falta para el panel viejo en `/admin`. El panel principal (Pages CMS) se activa como se explica arriba, en *Panel de edición*.
 1. Desplegar el worker [sveltia-cms-auth](https://github.com/sveltia/sveltia-cms-auth) en Cloudflare (botón *Deploy to Cloudflare* del README).
 2. GitHub → *Settings → Developer settings → OAuth Apps → New*:
    - Homepage URL: el dominio de la web.
    - Callback URL: `https://sveltia-cms-auth.<tu-cuenta>.workers.dev/callback`
 3. En el worker, cargar las variables `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` y `ALLOWED_DOMAINS` (= el dominio de la web).
 4. En `public/admin/config.yml` completar `repo:` y `base_url:` (URL del worker). Commit y push.
-5. Crear una cuenta de GitHub para tu mamá e invitarla como *collaborator* del repo (con permiso de escritura).
+5. (Sveltia exige cuenta de GitHub con permiso de escritura en el repo. Con Pages CMS no hace falta: se invita por email.)
 
 ### 4. Rebuild diario (opcional)
 Los eventos pasados ya se ocultan en el navegador; el rebuild diario además los saca del HTML.
@@ -74,7 +97,7 @@ Los eventos pasados ya se ocultan en el navegador; el rebuild diario además los
 2. [Google Search Console](https://search.google.com/search-console) → agregar el dominio → enviar `https://centroargentinoyogareiki.com.ar/sitemap-index.xml`.
 
 ### 5. Formulario de contacto (opcional)
-Crear una clave gratis en [web3forms.com](https://web3forms.com) con el email donde llegan las consultas y pegarla en el panel → *Datos del sitio → Clave de Web3Forms*. Sin clave, la página de contacto muestra solo WhatsApp, email y dirección.
+Crear una clave gratis en [web3forms.com](https://web3forms.com) con el email donde llegan las consultas y pegarla en el panel → *Datos del centro → Ajustes avanzados → Clave del formulario de contacto*. Sin clave, la página de contacto muestra solo WhatsApp, email y dirección.
 
 ## Modo "web en preparación"
 

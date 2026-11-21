@@ -1,0 +1,522 @@
+# Configuración del panel Pages CMS — https://pagescms.org/docs/configuration/
+# Se edita en https://app.pagescms.org (rama main). Los nombres de campo (name) son los que
+# lee la web: no cambiarlos sin actualizar también el código (src/content.config.ts, src/data/*.json).
+#
+# Notas para quien mantenga este archivo:
+# - Pages CMS borra al guardar los campos vacíos ("", null, []). La web ya tolera que falten.
+# - "pattern" se valida aunque el campo esté vacío: en los opcionales la regex empieza con ^$| .
+# - No hay campo de hora: las horas son texto validado (HH:mm). La web acepta también 8:30.
+# - "Datos del centro" son tres pantallas sobre el MISMO archivo (src/data/sitio.json).
+#   Funciona porque settings.content.merge = true (cada pantalla guarda solo sus campos).
+
+media:
+  input: public/uploads
+  output: /uploads
+  categories: [image]
+  rename: safe
+
+settings:
+  content:
+    merge: true
+  commit:
+    identity: user
+    templates:
+      create: "Panel: nuevo {path}"
+      update: "Panel: cambios en {path}"
+      delete: "Panel: borrado {path}"
+      rename: "Panel: {oldPath} renombrado a {newPath}"
+
+components:
+  # Una clase de la grilla semanal (se repite en cada día).
+  clase:
+    type: object
+    fields:
+      - name: inicio
+        label: Empieza
+        type: string
+        required: true
+        description: "Hora con dos puntos. Ej. 08:30 o 19:00"
+        pattern:
+          regex: '^([01]?[0-9]|2[0-3]):[0-5][0-9]$'
+          message: "Escribí la hora con dos puntos, por ejemplo 08:30 o 19:00"
+      - name: fin
+        label: Termina
+        type: string
+        description: "Ej. 09:30. La web calcula sola la duración."
+        pattern:
+          regex: '^$|^([01]?[0-9]|2[0-3]):[0-5][0-9]$'
+          message: "Escribí la hora con dos puntos, por ejemplo 09:30"
+      - name: clase
+        label: Clase
+        type: string
+        required: true
+        default: Yoga
+        description: "Ej. Yoga, Hatha Yoga, Meditación"
+      - name: profesora
+        label: Profesora
+        type: string
+        default: Maha Devi
+      - name: nivel
+        label: Nivel
+        type: select
+        default: Todos los niveles
+        options:
+          values: [Todos los niveles, Principiantes, Intermedio, Avanzado]
+
+content:
+  # ───────────────────────── BLOG ─────────────────────────
+  - name: blog
+    label: Blog
+    type: collection
+    path: src/content/blog
+    format: yaml-frontmatter
+    subfolders: false
+    filename:
+      template: "{primary}.md"
+      field: false
+    operations:
+      rename: false
+    view:
+      primary: titulo
+      fields: [titulo, fecha, borrador]
+      sort: [fecha, titulo]
+      search: [titulo, resumen]
+      default:
+        sort: fecha
+        order: desc
+    fields:
+      - name: titulo
+        label: Título
+        type: string
+        required: true
+        description: "Corto y claro. Ej. Tres minutos de respiración consciente"
+      - name: portada
+        label: Foto de portada
+        type: image
+        description: "Opcional. Mejor una foto horizontal."
+      - name: resumen
+        label: Resumen
+        type: text
+        description: "Una o dos frases. Se ve en la tarjeta del blog y cuando se comparte el link."
+      - name: body
+        label: Texto
+        type: rich-text
+        description: "Usá la barra para poner negrita, títulos, listas o fotos."
+      - name: fecha
+        label: Fecha
+        type: date
+        required: true
+        description: "Viene con la fecha de hoy. Las entradas se ordenan de la más nueva a la más vieja."
+        options:
+          format: yyyy-MM-dd
+      - name: borrador
+        label: Guardar como borrador (todavía no se publica)
+        type: boolean
+        default: false
+        description: "Activalo si la entrada no está lista. Cuando quieras publicarla, desactivalo y guardá."
+
+  # ──────────────────── TALLERES / EVENTOS ────────────────────
+  - name: eventos
+    label: Talleres y eventos
+    type: collection
+    path: src/content/eventos
+    format: yaml-frontmatter
+    subfolders: false
+    exclude: [.gitkeep]
+    filename:
+      template: "{fields.fecha}-{primary}.md"
+      field: false
+    operations:
+      rename: false
+    view:
+      primary: titulo
+      fields: [titulo, fecha, hora, lugar]
+      sort: [fecha, titulo]
+      search: [titulo, lugar]
+      default:
+        sort: fecha
+        order: desc
+    fields:
+      - name: titulo
+        label: Nombre del taller o evento
+        type: string
+        required: true
+        description: "Ej. Taller de respiración, Retiro de otoño"
+      - name: fecha
+        label: Fecha
+        type: date
+        required: true
+        default: ""
+        description: "Cuando la fecha pasa, el evento se oculta solo de la web."
+        options:
+          format: yyyy-MM-dd
+      - name: hora
+        label: Empieza
+        type: string
+        description: "Ej. 10:00"
+        pattern:
+          regex: '^$|^([01]?[0-9]|2[0-3]):[0-5][0-9]$'
+          message: "Escribí la hora con dos puntos, por ejemplo 10:00"
+      - name: hora_fin
+        label: Termina
+        type: string
+        description: "Ej. 13:00. Podés dejarlo vacío."
+        pattern:
+          regex: '^$|^([01]?[0-9]|2[0-3]):[0-5][0-9]$'
+          message: "Escribí la hora con dos puntos, por ejemplo 13:00"
+      - name: lugar
+        label: Lugar
+        type: string
+        default: En el centro
+      - name: precio
+        label: Precio
+        type: string
+        description: "Tal cual querés que se vea. Ej. $ 20.000 o Gratuito"
+      - name: imagen
+        label: Imagen
+        type: image
+        description: "Opcional. Un flyer o una foto."
+      - name: body
+        label: Descripción
+        type: text
+        description: "Qué se va a hacer, qué traer, etc. Dejá una línea en blanco entre párrafos."
+      - name: inscripcion
+        label: Link de inscripción (opcional)
+        type: string
+        description: "Si lo dejás vacío, el botón Inscribirme abre WhatsApp con un mensaje listo."
+        pattern:
+          regex: '^$|^https://'
+          message: "Tiene que ser un link completo que empiece con https://"
+
+  # ───────────────────── HORARIOS ─────────────────────
+  - name: horarios
+    label: Horarios de clases
+    type: file
+    path: src/data/horarios.json
+    format: json
+    operations:
+      create: false
+      delete: false
+    fields:
+      - name: aviso
+        label: Aviso para quien viene por primera vez
+        type: text
+        description: "Aparece al lado de la grilla. Ej. Traé ropa cómoda."
+      - name: lunes
+        label: Lunes
+        component: clase
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{inicio} · {clase}"
+        description: "Tocá Add an item para sumar una clase. El orden no importa: la web ordena por hora."
+      - name: martes
+        label: Martes
+        component: clase
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{inicio} · {clase}"
+      - name: miercoles
+        label: Miércoles
+        component: clase
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{inicio} · {clase}"
+      - name: jueves
+        label: Jueves
+        component: clase
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{inicio} · {clase}"
+      - name: viernes
+        label: Viernes
+        component: clase
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{inicio} · {clase}"
+      - name: sabado
+        label: Sábado
+        component: clase
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{inicio} · {clase}"
+      - name: domingo
+        label: Domingo
+        component: clase
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{inicio} · {clase}"
+
+  # ───────────────────── PRECIOS ─────────────────────
+  - name: precios
+    label: Precios
+    type: file
+    path: src/data/precios.json
+    format: json
+    operations:
+      create: false
+      delete: false
+    fields:
+      - name: intro
+        label: Texto de arriba
+        type: text
+      - name: planes
+        label: Planes
+        type: object
+        description: "Tocá un plan para abrirlo. Podés arrastrarlos para cambiar el orden."
+        list:
+          collapsible:
+            collapsed: true
+            summary: "{nombre} — {precio}"
+        fields:
+          - name: nombre
+            label: Nombre del plan
+            type: string
+            required: true
+            description: "Ej. 2 veces por semana"
+          - name: precio
+            label: Precio
+            type: string
+            required: true
+            description: "Tal cual se muestra. Ej. $ 25.000"
+          - name: periodo
+            label: Cada cuánto
+            type: string
+            description: "Ej. por mes, por clase"
+          - name: detalle
+            label: Qué incluye
+            type: string
+            list: true
+            description: "Una línea por cosa. Ej. 4 clases al mes"
+          - name: destacado
+            label: Resaltar como «Recomendado»
+            type: boolean
+            default: false
+      - name: nota
+        label: Nota al pie
+        type: text
+        description: "Ej. Precios vigentes. Consultá descuentos por transferencia."
+
+  # ───────────────────── PÁGINAS ─────────────────────
+  - name: paginas
+    label: Páginas
+    type: group
+    items:
+      - name: sobre
+        label: Quién soy
+        type: file
+        path: src/content/paginas/sobre.md
+        format: yaml-frontmatter
+        operations:
+          create: false
+          delete: false
+        fields:
+          - name: titulo
+            label: Título
+            type: string
+            required: true
+          - name: subtitulo
+            label: Frase debajo del título
+            type: text
+          - name: imagen
+            label: Foto
+            type: image
+            description: "Se muestra redonda. Mejor un retrato."
+          - name: body
+            label: Texto
+            type: rich-text
+            description: "Usá «Título» de la barra para separar secciones (ej. El viaje a la India)."
+      - name: formacion
+        label: Formación de profesoras
+        type: file
+        path: src/content/paginas/formacion.md
+        format: yaml-frontmatter
+        operations:
+          create: false
+          delete: false
+        fields:
+          - name: titulo
+            label: Título
+            type: string
+            required: true
+          - name: subtitulo
+            label: Frase debajo del título
+            type: text
+          - name: imagen
+            label: Foto
+            type: image
+          - name: body
+            label: Texto
+            type: rich-text
+            description: "Duración, modalidad, qué incluye, próxima cohorte…"
+      - name: libro
+        label: El libro
+        type: file
+        path: src/data/libro.json
+        format: json
+        operations:
+          create: false
+          delete: false
+        fields:
+          - name: publicado
+            label: Mostrar el libro en la web
+            type: boolean
+            default: false
+            description: "Mientras esté apagado, el libro no aparece en ningún lado. Activalo cuando título, descripción y tapa estén listos."
+          - name: titulo
+            label: Título del libro
+            type: string
+            required: true
+          - name: subtitulo
+            label: Subtítulo
+            type: string
+          - name: portada
+            label: Tapa
+            type: image
+          - name: descripcion
+            label: Descripción
+            type: text
+            description: "Dejá una línea en blanco entre párrafos."
+          - name: cita
+            label: Frase destacada
+            type: text
+          - name: links
+            label: Botones para comprarlo
+            type: object
+            list:
+              collapsible:
+                collapsed: true
+                summary: "{texto}"
+            fields:
+              - name: texto
+                label: Texto del botón
+                type: string
+                required: true
+                description: "Ej. Comprar en Mercado Libre"
+              - name: url
+                label: Link
+                type: string
+                required: true
+                description: "Copiá el link completo desde el navegador."
+                pattern:
+                  regex: '^https://'
+                  message: "Tiene que ser un link completo que empiece con https://"
+
+  # ─────────── DATOS DEL CENTRO (las tres pantallas guardan en sitio.json) ───────────
+  - name: datos
+    label: Datos del centro
+    type: group
+    items:
+      - name: contacto
+        label: WhatsApp, redes y dirección
+        type: file
+        path: src/data/sitio.json
+        format: json
+        operations:
+          create: false
+          delete: false
+        fields:
+          - name: whatsapp
+            label: WhatsApp
+            type: string
+            description: "Con 549 adelante, sin + ni espacios. Ej. celular 11 5567-5161 → 5491155675161"
+            pattern:
+              regex: '^$|^[0-9]{10,15}$'
+              message: "Solo números, sin espacios ni guiones. Ej. 5491155675161"
+          - name: whatsapp_mensaje
+            label: Mensaje que se escribe solo al abrir WhatsApp
+            type: string
+            description: "Ej. ¡Hola! Quisiera información sobre las clases de yoga."
+          - name: email
+            label: Email
+            type: string
+            description: "Si queda vacío, no se muestra en la web."
+            pattern:
+              regex: '^$|^[^@\s]+@[^@\s]+\.[^@\s]+$'
+              message: "Revisá el email. Ej. nombre@gmail.com"
+          - name: instagram
+            label: Instagram
+            type: string
+            description: "Link completo de tu perfil. Vacío = no se muestra."
+            pattern:
+              regex: '^$|^https://'
+              message: "Tiene que ser un link completo que empiece con https://"
+          - name: facebook
+            label: Facebook
+            type: string
+            description: "Link completo. Vacío = no se muestra."
+            pattern:
+              regex: '^$|^https://'
+              message: "Tiene que ser un link completo que empiece con https://"
+          - name: youtube
+            label: YouTube
+            type: string
+            description: "Link completo. Vacío = no se muestra."
+            pattern:
+              regex: '^$|^https://'
+              message: "Tiene que ser un link completo que empiece con https://"
+          - name: direccion
+            label: Dirección
+            type: string
+            description: "Calle y número, localidad. Ej. Isabel la Católica 764, Lomas de Zamora"
+      - name: presentacion
+        label: Portada y presentación
+        type: file
+        path: src/data/sitio.json
+        format: json
+        operations:
+          create: false
+          delete: false
+        fields:
+          - name: eslogan
+            label: Frase principal de la portada
+            type: string
+            required: true
+            description: "La frase grande que se ve al entrar. Ej. Un espacio para volver a vos"
+          - name: descripcion
+            label: Descripción corta del centro
+            type: text
+            required: true
+            description: "Dos o tres líneas. Aparece en la portada y en Google."
+          - name: hero_imagen
+            label: Foto de fondo de la portada
+            type: image
+            description: "Opcional. Una foto horizontal y luminosa."
+          - name: profesora
+            label: Nombre de la profesora
+            type: string
+          - name: credenciales
+            label: Trayectoria (una línea)
+            type: string
+            description: "Ej. Más de 20 años enseñando · Formadora de profesoras. Vacío = no se muestra."
+          - name: nombre
+            label: Nombre del centro
+            type: string
+            required: true
+            description: "Aparece arriba en todas las páginas y en Google. Cambialo solo si cambia el nombre."
+      - name: avanzado
+        label: Ajustes avanzados
+        type: file
+        path: src/data/sitio.json
+        format: json
+        operations:
+          create: false
+          delete: false
+        fields:
+          - name: mapa_embed
+            label: Mapa (link para incorporar)
+            type: string
+            description: "Avanzado: tocalo solo si cambia la dirección. Google Maps → Compartir → Incorporar un mapa → copiá solo el link que está entre comillas después de src=. Vacío = sin mapa."
+            pattern:
+              regex: '^$|(output=embed|/maps/embed)'
+              message: "Tiene que ser el link para incorporar el mapa (contiene output=embed o /maps/embed)"
+          - name: web3forms_key
+            label: Clave del formulario de contacto (Web3Forms)
+            type: string
+            description: "Avanzado: no la cambies si no te lo piden. Vacío = la página de contacto no muestra formulario."
