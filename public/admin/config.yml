@@ -1,7 +1,7 @@
 # Configuración del panel (Sveltia CMS) — https://sveltiacms.app/en/docs
 backend:
   name: github
-  repo: Liku-beep-boop/centro-yoga
+  repo: cdrojas-code/centro-yoga
   branch: main
   base_url: https://sveltia-cms-auth.daniel-trake02.workers.dev
   commit_messages:
